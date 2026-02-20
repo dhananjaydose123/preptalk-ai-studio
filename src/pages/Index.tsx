@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
+import FloatingLines from "@/components/FloatingLines";
 import {
   MotionCard,
   MotionButton,
@@ -10,7 +11,6 @@ import {
 } from "@/components/MotionElements";
 import { Mic, Users, BarChart3, Zap, ArrowRight, Star } from "lucide-react";
 import { motion } from "framer-motion";
-import heroIllustration from "@/assets/hero-illustration.png";
 import featureAiInterview from "@/assets/feature-ai-interview.png";
 import featureGroupDiscussion from "@/assets/feature-group-discussion.png";
 import featureAnalytics from "@/assets/feature-analytics.png";
@@ -57,17 +57,20 @@ const steps = [
     title: "Choose Your Practice",
     description:
       "Select from AI interviews or group discussions based on your goals.",
+    icon: "🎯",
   },
   {
     step: "02",
     title: "Practice & Engage",
     description:
       "Dive into realistic scenarios with adaptive AI or real peers.",
+    icon: "🚀",
   },
   {
     step: "03",
     title: "Review & Improve",
     description: "Get detailed feedback and track your progress over time.",
+    icon: "📈",
   },
 ];
 
@@ -100,12 +103,21 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        <div
-          className="absolute inset-0 gradient-hero opacity-10 animate-gradient-shift"
-          style={{ backgroundSize: "200% 200%" }}
-        />
+      {/* Hero with FloatingLines */}
+      <section className="relative pt-32 pb-20 overflow-hidden min-h-[90vh] flex items-center">
+        <div className="absolute inset-0">
+          <FloatingLines
+            linesGradient={["#7c3aed", "#a855f7", "#6366f1", "#d946ef"]}
+            lineCount={[8, 6, 5]}
+            lineDistance={[4, 5, 6]}
+            animationSpeed={0.8}
+            bendRadius={5}
+            bendStrength={-0.5}
+            interactive={true}
+            parallax={true}
+            parallaxStrength={0.15}
+          />
+        </div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left ml-5">
@@ -114,7 +126,7 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-medium">
+                <div className="inline-block mb-4 px-4 py-1.5 rounded-full bg-secondary text-secondary-foreground text-sm font-medium backdrop-blur-sm">
                   🚀 AI-Powered Interview Preparation
                 </div>
               </motion.div>
@@ -159,7 +171,7 @@ const Index = () => {
                     size="lg"
                     variant="outline"
                     asChild
-                    className="text-lg px-8 h-12"
+                    className="text-lg px-8 h-12 backdrop-blur-sm"
                   >
                     <Link to="/dashboard">View Demo</Link>
                   </Button>
@@ -167,56 +179,73 @@ const Index = () => {
               </motion.div>
             </div>
             <motion.div
-              className="flex justify-center lg:justify-end"
+              className="hidden lg:flex justify-center lg:justify-end"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.7, delay: 0.3 }}
             >
-              <img
-                src={heroIllustration}
-                alt="AI-powered interview preparation illustration"
-                className="w-full max-w-md lg:max-w-lg rounded-2xl shadow-2xl shadow-primary/20 animate-float"
-              />
+              <div className="animated-border rounded-2xl p-1">
+                <img
+                  src={featureAiInterview}
+                  alt="AI-powered interview preparation"
+                  className="w-full max-w-md lg:max-w-lg rounded-2xl shadow-2xl shadow-primary/20"
+                />
+              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-20 bg-secondary/30">
+      {/* Features – modernized with animated borders */}
+      <section className="py-24 relative">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
+            className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
+            <span className="inline-block mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
+              Features
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
               Everything You Need to{" "}
               <span className="gradient-text">Succeed</span>
             </h2>
-            <p className="text-muted-foreground text-center mb-12 max-w-xl mx-auto">
+            <p className="text-muted-foreground max-w-xl mx-auto text-lg">
               Comprehensive tools designed to transform your interview skills
               from good to exceptional.
             </p>
           </motion.div>
-          <MotionStagger className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MotionStagger className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((f, i) => (
               <MotionItem key={f.title}>
                 <MotionCard>
-                  <Card className="group hover:shadow-lg hover:shadow-primary/10 transition-shadow border-border/50 h-full">
-                    <CardContent className="p-6">
-                      <img
-                        src={featureImages[i]}
-                        alt={f.title}
-                        className="w-full h-36 object-cover rounded-lg mb-4"
-                      />
-                      <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {f.description}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  <div className="animated-border rounded-xl h-full">
+                    <Card className="border-0 bg-card/80 backdrop-blur-sm h-full rounded-xl">
+                      <CardContent className="p-0">
+                        <div className="overflow-hidden rounded-t-xl">
+                          <img
+                            src={featureImages[i]}
+                            alt={f.title}
+                            className="w-full h-44 object-cover transition-transform duration-500 hover:scale-110"
+                          />
+                        </div>
+                        <div className="p-5">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="p-2 rounded-lg gradient-primary">
+                              <f.icon className="h-4 w-4 text-primary-foreground" />
+                            </div>
+                            <h3 className="font-bold text-lg">{f.title}</h3>
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {f.description}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </MotionCard>
               </MotionItem>
             ))}
@@ -224,41 +253,65 @@ const Index = () => {
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <motion.h2
-            className="text-3xl md:text-4xl font-bold text-center mb-4"
+      {/* How It Works – modernized */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-secondary/30 via-background to-secondary/30" />
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            className="text-center mb-16"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            How It <span className="gradient-text">Works</span>
-          </motion.h2>
+            <span className="inline-block mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
+              How It Works
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Three Steps to <span className="gradient-text">Success</span>
+            </h2>
+          </motion.div>
+
           <motion.div
-            className="mb-12"
+            className="mb-16"
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            <img
-              src={howItWorksImg}
-              alt="How PrepTalkAI works - 3 step process"
-              className="w-full max-w-3xl mx-auto rounded-2xl shadow-lg shadow-primary/10"
-            />
+            <div className="animated-border rounded-2xl p-1 max-w-4xl mx-auto">
+              <img
+                src={howItWorksImg}
+                alt="How PrepTalkAI works - 3 step process"
+                className="w-full rounded-2xl"
+              />
+            </div>
           </motion.div>
-          <MotionStagger className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {steps.map((s) => (
+
+          <MotionStagger className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {steps.map((s, i) => (
               <MotionItem key={s.step}>
-                <div className="text-center">
-                  <div className="text-5xl font-black gradient-text mb-4">
-                    {s.step}
+                <motion.div
+                  className="relative group"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <div className="animated-border rounded-2xl h-full">
+                    <div className="bg-card/90 backdrop-blur-sm rounded-2xl p-8 h-full text-center">
+                      <div className="text-4xl mb-4">{s.icon}</div>
+                      <div className="text-6xl font-black gradient-text mb-4 opacity-30">
+                        {s.step}
+                      </div>
+                      <h3 className="font-bold text-xl mb-3">{s.title}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {s.description}
+                      </p>
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-xl mb-2">{s.title}</h3>
-                  <p className="text-muted-foreground text-sm">
-                    {s.description}
-                  </p>
-                </div>
+                  {/* Connector line */}
+                  {i < steps.length - 1 && (
+                    <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 gradient-primary opacity-40" />
+                  )}
+                </motion.div>
               </MotionItem>
             ))}
           </MotionStagger>
