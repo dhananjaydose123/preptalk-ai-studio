@@ -9,7 +9,7 @@ import {
   MotionStagger,
   MotionItem,
 } from "@/components/MotionElements";
-import { Mic, Users, BarChart3, Zap, ArrowRight, Star } from "lucide-react";
+import { Mic, Users, BarChart3, Zap, ArrowRight, Star, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import featureAiInterview from "@/assets/feature-ai-interview.png";
 import featureGroupDiscussion from "@/assets/feature-group-discussion.png";
@@ -262,7 +262,7 @@ const Index = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            <div className="animated-border rounded-2xl p-1 max-w-4xl mx-auto">
+            <div className="animated-border rounded-2xl p-1 max-w-2xl mx-auto">
               <img
                 src={howItWorksImg}
                 alt="How PrepTalkAI works - 3 step process"
@@ -346,6 +346,84 @@ const Index = () => {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="py-24 relative">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <span className="inline-block mb-3 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold uppercase tracking-wider">
+              Pricing
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Completely <span className="gradient-text">Free</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto text-lg">
+              All features are free during our launch period. No credit card required.
+            </p>
+          </motion.div>
+
+          <MotionStagger className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                name: "Starter",
+                desc: "Perfect for getting started",
+                features: ["5 AI mock interviews/month", "Join group discussions", "Basic performance analytics", "Email support"],
+              },
+              {
+                name: "Pro",
+                desc: "For serious preparation",
+                featured: true,
+                features: ["Unlimited AI interviews", "Priority discussion rooms", "Advanced analytics & insights", "Personalized improvement plans", "Interview recording & playback"],
+              },
+              {
+                name: "Team",
+                desc: "For study groups & cohorts",
+                features: ["Everything in Pro", "Team analytics dashboard", "Custom discussion topics", "Dedicated support channel"],
+              },
+            ].map((plan) => (
+              <MotionItem key={plan.name}>
+                <div className={`animated-border rounded-2xl h-full ${plan.featured ? "scale-105" : ""}`}>
+                  <Card className={`border-0 bg-card/80 backdrop-blur-sm h-full rounded-2xl ${plan.featured ? "ring-2 ring-primary/50" : ""}`}>
+                    <CardContent className="p-8 flex flex-col h-full">
+                      {plan.featured && (
+                        <span className="inline-block self-start mb-3 px-3 py-1 rounded-full gradient-primary text-primary-foreground text-xs font-semibold">
+                          Most Popular
+                        </span>
+                      )}
+                      <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-4">{plan.desc}</p>
+                      <div className="mb-6">
+                        <span className="text-4xl font-extrabold">$0</span>
+                        <span className="text-muted-foreground text-sm">/month</span>
+                      </div>
+                      <ul className="space-y-3 mb-8 flex-1">
+                        {plan.features.map((f) => (
+                          <li key={f} className="flex items-start gap-2 text-sm">
+                            <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <Button
+                        asChild
+                        className={plan.featured ? "gradient-primary border-0 w-full" : "w-full"}
+                        variant={plan.featured ? "default" : "outline"}
+                      >
+                        <Link to="/signup">Get Started Free</Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </MotionItem>
+            ))}
+          </MotionStagger>
         </div>
       </section>
 
