@@ -10,24 +10,46 @@ const navLinks = [
 ];
 
 const Navbar = () => {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const navigate = useNavigate();
+
+  const goHome = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (hash) {
+        window.history.pushState(null, "", "/");
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      } else if (pathname !== "/") {
+        navigate("/");
+      }
+    },
+    [pathname, hash, navigate],
+  );
 
   const handleNavClick = useCallback(
     (e: React.MouseEvent, to: string, section: string | null) => {
       if (section) {
         e.preventDefault();
         if (pathname === "/") {
-          document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
+          document
+            .getElementById(section)
+            ?.scrollIntoView({ behavior: "smooth" });
+          window.history.pushState(null, "", `/#${section}`);
+          window.dispatchEvent(new PopStateEvent("popstate"));
         } else {
-          navigate("/");
+          navigate(`/#${section}`);
           setTimeout(() => {
-            document.getElementById(section)?.scrollIntoView({ behavior: "smooth" });
+            document
+              .getElementById(section)
+              ?.scrollIntoView({ behavior: "smooth" });
           }, 400);
         }
+      } else if (to === "/") {
+        goHome(e);
       }
     },
-    [pathname, navigate]
+    [pathname, navigate, goHome],
   );
 
   return (
@@ -39,6 +61,7 @@ const Navbar = () => {
         <div className="flex items-center gap-1">
           <Link
             to="/"
+            onClick={goHome}
             className="flex items-center gap-2 font-bold text-xl shrink-0 px-4 py-2"
           >
             <Brain className="h-6 w-6 text-primary" />
@@ -49,7 +72,11 @@ const Navbar = () => {
 
           {navLinks.map(({ label, to, section }) => {
             const isActive =
-              to === "/about" ? pathname === "/about" : pathname === to || (to === "/" && pathname === "/");
+              to === "/about"
+                ? pathname === "/about"
+                : section
+                  ? hash === `#${section}`
+                  : pathname === "/" && !hash;
             return (
               <Link
                 key={label}
