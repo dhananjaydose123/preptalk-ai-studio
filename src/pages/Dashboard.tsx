@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/components/DashboardLayout";
 import { MotionCard, MotionButton, MotionStagger, MotionItem } from "@/components/MotionElements";
 import { Mic, Users, TrendingUp, Flame, Target, ArrowRight } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const stats = [
   { label: "Sessions Completed", value: "24", icon: Target, color: "text-primary" },
