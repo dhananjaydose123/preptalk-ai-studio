@@ -22,12 +22,15 @@ const recentSessions = [
 ];
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  const displayName = user?.displayName || "Student";
+
   return (
     <DashboardLayout>
       {/* Welcome */}
       <MotionItem>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-1">Welcome back, Student! 👋</h1>
+          <h1 className="text-3xl font-bold mb-1">Welcome back, {displayName}! 👋</h1>
           <p className="text-muted-foreground">Keep up the great work. Here's your progress overview.</p>
         </div>
       </MotionItem>
