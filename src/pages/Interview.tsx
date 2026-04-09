@@ -302,9 +302,9 @@ const Interview = () => {
                   {msg.role === "assistant" ? <Bot className="h-4 w-4 text-primary-foreground" /> : <User className="h-4 w-4 text-secondary-foreground" />}
                 </div>
                 <div className={`max-w-[80%] rounded-2xl p-4 text-sm ${msg.role === "assistant" ? "bg-secondary text-secondary-foreground" : "gradient-primary text-primary-foreground"}`}>
-                  <ReactMarkdown className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                    {msg.content}
-                  </ReactMarkdown>
+                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ))}
