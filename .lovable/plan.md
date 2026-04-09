@@ -1,55 +1,65 @@
 
 
-# PrepTalkAI Frontend Implementation Plan
+# AI Interview Backend Implementation Plan
 
-## 🎨 Theme & Design System
-- Update the color scheme to purple/violet primary colors with bold gradients
-- Add custom gradient keyframe animations for the hero section
-- Set up vibrant accent colors (violet, indigo, fuchsia tones)
+## Overview
+Replace the mock interview chat with a real AI-powered interviewer using **Lovable AI Gateway** (already available via `LOVABLE_API_KEY`). The AI will ask contextual interview questions, respond to user answers, and generate structured feedback when the interview ends.
 
-## 📄 Pages to Build
+## Architecture
 
-### 1. Landing Page (`/`)
-- Hero section with animated gradient background, bold headline, and CTA buttons
-- Features section with 4 icon cards (AI Interviews, Group Discussions, Analytics, Instant Feedback)
-- "How It Works" 3-step visual section
-- Testimonials section with student quotes
-- Footer with branding and links
+```text
+┌─────────────┐       ┌──────────────────────┐       ┌────────────────────┐
+│  Interview   │──────▶│  Edge Function:       │──────▶│  Lovable AI        │
+│  Page (React)│◀──────│  interview-chat       │◀──────│  Gateway (Gemini)  │
+│              │       │  (streaming SSE)      │       │                    │
+│              │──────▶│  Edge Function:       │──────▶│                    │
+│              │◀──────│  interview-feedback   │◀──────│                    │
+└─────────────┘       └──────────────────────┘       └────────────────────┘
+```
 
-### 2. Auth Pages (`/login`, `/signup`)
-- Login page with email/password form, purple gradient card design
-- Signup page with name, email, password fields
-- Link between login ↔ signup
-- UI-only, no backend
+## What Gets Built
 
-### 3. Dashboard (`/dashboard`)
-- Sidebar layout with navigation (Dashboard, AI Interview, Group Discussion, Settings)
-- Welcome banner with greeting
-- Quick action cards: Start Interview, Join Discussion
-- Stats cards: Sessions completed, average score, practice streak
-- Recent sessions table with mock data
+### 1. Edge Function: `interview-chat`
+- Receives the full conversation history + interview config (type, difficulty, role)
+- System prompt instructs the AI to act as an interviewer for the selected type/difficulty/role
+- Streams responses back via SSE for real-time token rendering
+- Handles CORS, rate limit errors (429), and credit errors (402)
 
-### 4. AI Interview Practice (`/interview`)
-- Setup screen: choose interview type, difficulty, and topic
-- Chat-style interview UI with AI questions and user response area
-- Feedback/results panel with score breakdown and improvement tips
-- All using mock/static data
+### 2. Edge Function: `interview-feedback`
+- Receives the complete conversation when user clicks "End Interview"
+- Uses structured output (tool calling) to extract scores and tips in a defined JSON schema:
+  - Overall score, category scores (Communication, Technical Knowledge, Problem Solving, Confidence)
+  - 3-5 actionable improvement tips
+- Returns structured JSON (non-streaming)
 
-### 5. Group Discussion Room (`/discussion`)
-- Session browser listing available rooms with topic, participants, and join button
-- Discussion room UI with participant avatars, topic header, timer
-- Mock participant data and session cards
+### 3. Updated Interview Page (`src/pages/Interview.tsx`)
+- **Setup phase**: Track selected values (type, difficulty, role) in state
+- **Interview phase**:
+  - On start, send initial message to get AI's first question (streamed)
+  - User types response, sends it, AI responds with next question (streamed, token-by-token)
+  - Messages render with markdown support via `react-markdown`
+  - Loading indicator while AI is responding
+  - Auto-scroll to latest message
+- **Feedback phase**:
+  - On "End Interview", call `interview-feedback` with full conversation
+  - Display real AI-generated scores and tips (replacing mock data)
+  - Loading state while feedback is being generated
 
-## 🧭 Navigation & Layout
-- Public navbar component for landing/auth pages (logo + Sign In / Sign Up)
-- Sidebar layout component for authenticated pages using shadcn Sidebar
-- React Router setup for all routes
-- Responsive design for mobile and desktop
+### 4. Supabase Config
+- `supabase/config.toml` with both functions configured
 
-## 📦 Components to Create
-- `Navbar` — public top navigation
-- `AppSidebar` — sidebar for dashboard pages
-- `DashboardLayout` — layout wrapper with sidebar
-- Page components for each route
-- Reusable cards for features, stats, sessions, and discussion rooms
+## Key Details
+
+- **Model**: `google/gemini-3-flash-preview` (fast, good for conversational interviews)
+- **Streaming**: SSE-based streaming for the chat, non-streaming for feedback
+- **No database needed**: Conversation lives in React state for the session
+- **Dependencies**: Add `react-markdown` for rendering AI responses with formatting
+- **System prompt** crafted per interview type (technical asks coding/system design questions, behavioral uses STAR method, HR asks culture-fit questions)
+
+## Files to Create/Edit
+1. `supabase/config.toml` — function config
+2. `supabase/functions/interview-chat/index.ts` — streaming chat edge function
+3. `supabase/functions/interview-feedback/index.ts` — feedback generation edge function
+4. `src/pages/Interview.tsx` — full rewrite with real AI integration
+5. `package.json` — add `react-markdown`
 
