@@ -18,7 +18,7 @@ export function useVoice({ onTranscript, lang = "en-US" }: UseVoiceOptions = {})
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
   const synthRef = useRef(window.speechSynthesis);
 
   const supportsRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
