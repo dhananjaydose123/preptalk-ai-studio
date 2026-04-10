@@ -113,6 +113,7 @@ const Interview = () => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
 
