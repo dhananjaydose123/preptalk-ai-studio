@@ -382,7 +382,7 @@ const Interview = () => {
               id="send-btn"
               size="icon"
               className="gradient-primary border-0 shrink-0 h-auto"
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={isLoading || !input.trim()}
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
