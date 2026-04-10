@@ -227,6 +227,21 @@ const Interview = () => {
 
       const data = await resp.json();
       setFeedback(data);
+
+      // Save session to database
+      if (user) {
+        await supabase.from("interview_sessions").insert({
+          firebase_uid: user.uid,
+          interview_type: config.type,
+          difficulty: config.difficulty,
+          role: config.role,
+          messages: messages as any,
+          overall_score: data.overall,
+          categories: data.categories as any,
+          tips: data.tips as any,
+          summary: data.summary || null,
+        });
+      }
     } catch (err: any) {
       toast({ title: "Feedback Error", description: err.message, variant: "destructive" });
       setFeedback({
