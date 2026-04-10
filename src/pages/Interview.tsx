@@ -112,16 +112,26 @@ const Interview = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Track the latest complete AI response for speaking
-  const latestAssistantRef = useRef("");
-
-  const handleVoiceTranscript = useCallback((text: string) => {
-    // When voice transcript is ready, send it as a message
-    sendMessageFromVoice(text);
-  }, []);
+  const pendingVoiceRef = useRef<string | null>(null);
 
   const voice = useVoice({
-    onTranscript: handleVoiceTranscript,
+    onTranscript: (text: string) => {
+      pendingVoiceRef.current = text;
+    },
+  });
+
+  // Process pending voice transcript
+  useEffect(() => {
+    if (pendingVoiceRef.current && !isLoading) {
+      const text = pendingVoiceRef.current;
+      pendingVoiceRef.current = null;
+      setInput(text);
+      // Trigger send via a small delay so input state is set
+      setTimeout(() => {
+        const sendBtn = document.getElementById("send-btn");
+        sendBtn?.click();
+      }, 100);
+    }
   });
 
   const scrollToBottom = useCallback(() => {
