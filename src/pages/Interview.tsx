@@ -199,6 +199,7 @@ const Interview = () => {
   sendFromVoiceRef.current = (text: string) => sendMessage(text);
 
   const endInterview = async () => {
+    voice.stopSpeaking();
     if (messages.length < 2) {
       setPhase("setup");
       return;
