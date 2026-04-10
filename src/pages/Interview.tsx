@@ -5,9 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Mic, Send, Bot, User, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { Mic, MicOff, Send, Bot, User, CheckCircle, ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useVoice } from "@/hooks/useVoice";
 import ReactMarkdown from "react-markdown";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -110,6 +112,16 @@ const Interview = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
+  const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
+
+  const voice = useVoice({
+    onTranscript: (text: string) => {
+      if (sendFromVoiceRef.current) {
+        sendFromVoiceRef.current(text);
+      }
+    },
+  });
+
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -139,7 +151,7 @@ const Interview = () => {
       messages: [],
       config,
       onDelta: upsert,
-      onDone: () => setIsLoading(false),
+      onDone: () => { setIsLoading(false); voice.speak(assistantSoFar); },
       onError: (err) => {
         setIsLoading(false);
         toast({ title: "Error", description: err, variant: "destructive" });
@@ -147,10 +159,10 @@ const Interview = () => {
     });
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (overrideText?: string) => {
+    const text = (overrideText || input).trim();
     if (!text || isLoading) return;
-    setInput("");
+    if (!overrideText) setInput("");
 
     const userMsg: Msg = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
@@ -175,7 +187,7 @@ const Interview = () => {
       messages: newMessages,
       config,
       onDelta: upsert,
-      onDone: () => setIsLoading(false),
+      onDone: () => { setIsLoading(false); voice.speak(assistantSoFar); },
       onError: (err) => {
         setIsLoading(false);
         toast({ title: "Error", description: err, variant: "destructive" });
@@ -183,7 +195,11 @@ const Interview = () => {
     });
   };
 
+  // Wire voice transcript to sendMessage
+  sendFromVoiceRef.current = (text: string) => sendMessage(text);
+
   const endInterview = async () => {
+    voice.stopSpeaking();
     if (messages.length < 2) {
       setPhase("setup");
       return;
@@ -269,6 +285,13 @@ const Interview = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium">Voice Mode</label>
+                  <p className="text-xs text-muted-foreground">Speak answers & hear AI questions</p>
+                </div>
+                <Switch checked={voice.voiceEnabled} onCheckedChange={voice.setVoiceEnabled} />
+              </div>
               <Button className="w-full gradient-primary border-0" onClick={startInterview}>
                 <Mic className="mr-2 h-4 w-4" /> Start Interview
               </Button>
@@ -320,20 +343,50 @@ const Interview = () => {
             )}
           </div>
 
+          {/* Voice transcript indicator */}
+          {voice.voiceEnabled && voice.isListening && voice.transcript && (
+            <div className="bg-secondary/50 rounded-lg p-2 mb-2 text-sm text-muted-foreground animate-pulse">
+              🎤 {voice.transcript}
+            </div>
+          )}
+
+          {/* Speaking indicator */}
+          {voice.isSpeaking && (
+            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+              <Volume2 className="h-4 w-4 animate-pulse text-primary" />
+              <span>AI is speaking...</span>
+              <Button variant="ghost" size="sm" onClick={voice.stopSpeaking} className="h-6 px-2">
+                <VolumeX className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-2">
+            {voice.voiceEnabled && (
+              <Button
+                size="icon"
+                variant={voice.isListening ? "destructive" : "outline"}
+                className={`shrink-0 h-auto ${voice.isListening ? "animate-pulse" : ""}`}
+                onClick={voice.toggleListening}
+                disabled={isLoading}
+              >
+                {voice.isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
             <Textarea
-              placeholder="Type your response..."
+              placeholder={voice.voiceEnabled ? "Speak or type your response..." : "Type your response..."}
               className="resize-none"
               rows={2}
-              value={input}
+              value={voice.isListening ? voice.transcript : input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading}
+              disabled={isLoading || voice.isListening}
             />
             <Button
+              id="send-btn"
               size="icon"
               className="gradient-primary border-0 shrink-0 h-auto"
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={isLoading || !input.trim()}
             >
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
