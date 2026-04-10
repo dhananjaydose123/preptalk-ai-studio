@@ -159,10 +159,10 @@ const Interview = () => {
     });
   };
 
-  const sendMessage = async () => {
-    const text = input.trim();
+  const sendMessage = async (overrideText?: string) => {
+    const text = (overrideText || input).trim();
     if (!text || isLoading) return;
-    setInput("");
+    if (!overrideText) setInput("");
 
     const userMsg: Msg = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
