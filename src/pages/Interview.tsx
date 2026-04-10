@@ -351,17 +351,47 @@ const Interview = () => {
             )}
           </div>
 
+          {/* Voice transcript indicator */}
+          {voice.voiceEnabled && voice.isListening && voice.transcript && (
+            <div className="bg-secondary/50 rounded-lg p-2 mb-2 text-sm text-muted-foreground animate-pulse">
+              🎤 {voice.transcript}
+            </div>
+          )}
+
+          {/* Speaking indicator */}
+          {voice.isSpeaking && (
+            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+              <Volume2 className="h-4 w-4 animate-pulse text-primary" />
+              <span>AI is speaking...</span>
+              <Button variant="ghost" size="sm" onClick={voice.stopSpeaking} className="h-6 px-2">
+                <VolumeX className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+
           <div className="flex gap-2">
+            {voice.voiceEnabled && (
+              <Button
+                size="icon"
+                variant={voice.isListening ? "destructive" : "outline"}
+                className={`shrink-0 h-auto ${voice.isListening ? "animate-pulse" : ""}`}
+                onClick={voice.toggleListening}
+                disabled={isLoading}
+              >
+                {voice.isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              </Button>
+            )}
             <Textarea
-              placeholder="Type your response..."
+              placeholder={voice.voiceEnabled ? "Speak or type your response..." : "Type your response..."}
               className="resize-none"
               rows={2}
-              value={input}
+              value={voice.isListening ? voice.transcript : input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isLoading}
+              disabled={isLoading || voice.isListening}
             />
             <Button
+              id="send-btn"
               size="icon"
               className="gradient-primary border-0 shrink-0 h-auto"
               onClick={sendMessage}
