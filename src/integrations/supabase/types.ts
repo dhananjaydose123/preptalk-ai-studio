@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      interview_sessions: {
+        Row: {
+          categories: Json | null
+          created_at: string
+          difficulty: string
+          firebase_uid: string
+          id: string
+          interview_type: string
+          messages: Json
+          overall_score: number | null
+          role: string
+          summary: string | null
+          tips: Json | null
+        }
+        Insert: {
+          categories?: Json | null
+          created_at?: string
+          difficulty: string
+          firebase_uid: string
+          id?: string
+          interview_type: string
+          messages?: Json
+          overall_score?: number | null
+          role: string
+          summary?: string | null
+          tips?: Json | null
+        }
+        Update: {
+          categories?: Json | null
+          created_at?: string
+          difficulty?: string
+          firebase_uid?: string
+          id?: string
+          interview_type?: string
+          messages?: Json
+          overall_score?: number | null
+          role?: string
+          summary?: string | null
+          tips?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

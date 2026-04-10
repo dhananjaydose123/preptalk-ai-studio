@@ -10,6 +10,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Mic, MicOff, Send, Bot, User, CheckCircle, ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoice } from "@/hooks/useVoice";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -111,6 +113,7 @@ const Interview = () => {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
 
@@ -224,6 +227,21 @@ const Interview = () => {
 
       const data = await resp.json();
       setFeedback(data);
+
+      // Save session to database
+      if (user) {
+        await supabase.from("interview_sessions").insert({
+          firebase_uid: user.uid,
+          interview_type: config.type,
+          difficulty: config.difficulty,
+          role: config.role,
+          messages: messages as any,
+          overall_score: data.overall,
+          categories: data.categories as any,
+          tips: data.tips as any,
+          summary: data.summary || null,
+        });
+      }
     } catch (err: any) {
       toast({ title: "Feedback Error", description: err.message, variant: "destructive" });
       setFeedback({
