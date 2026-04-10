@@ -195,6 +195,9 @@ const Interview = () => {
     });
   };
 
+  // Wire voice transcript to sendMessage
+  sendFromVoiceRef.current = (text: string) => sendMessage(text);
+
   const endInterview = async () => {
     if (messages.length < 2) {
       setPhase("setup");
