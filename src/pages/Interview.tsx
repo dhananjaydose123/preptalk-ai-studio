@@ -163,7 +163,7 @@ const Interview = () => {
       messages: [],
       config,
       onDelta: upsert,
-      onDone: () => setIsLoading(false),
+      onDone: () => { setIsLoading(false); voice.speak(assistantSoFar); },
       onError: (err) => {
         setIsLoading(false);
         toast({ title: "Error", description: err, variant: "destructive" });
