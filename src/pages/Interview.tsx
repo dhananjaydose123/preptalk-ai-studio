@@ -112,26 +112,14 @@ const Interview = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const pendingVoiceRef = useRef<string | null>(null);
+  const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
 
   const voice = useVoice({
     onTranscript: (text: string) => {
-      pendingVoiceRef.current = text;
+      if (sendFromVoiceRef.current) {
+        sendFromVoiceRef.current(text);
+      }
     },
-  });
-
-  // Process pending voice transcript
-  useEffect(() => {
-    if (pendingVoiceRef.current && !isLoading) {
-      const text = pendingVoiceRef.current;
-      pendingVoiceRef.current = null;
-      setInput(text);
-      // Trigger send via a small delay so input state is set
-      setTimeout(() => {
-        const sendBtn = document.getElementById("send-btn");
-        sendBtn?.click();
-      }, 100);
-    }
   });
 
   const scrollToBottom = useCallback(() => {
