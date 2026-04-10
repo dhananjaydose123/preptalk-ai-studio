@@ -5,9 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Mic, Send, Bot, User, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { Mic, MicOff, Send, Bot, User, CheckCircle, ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useVoice } from "@/hooks/useVoice";
 import ReactMarkdown from "react-markdown";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
