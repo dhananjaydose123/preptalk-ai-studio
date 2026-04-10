@@ -10,6 +10,8 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Mic, MicOff, Send, Bot, User, CheckCircle, ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoice } from "@/hooks/useVoice";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;

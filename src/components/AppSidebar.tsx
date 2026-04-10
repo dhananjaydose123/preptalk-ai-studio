@@ -1,4 +1,4 @@
-import { LayoutDashboard, Mic, Users, Settings, Brain } from "lucide-react";
+import { LayoutDashboard, Mic, Users, Settings, Brain, History } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import {
   Sidebar,
