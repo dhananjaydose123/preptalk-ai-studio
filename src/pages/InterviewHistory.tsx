@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, History, ArrowLeft, Bot, User, CheckCircle, Mic } from "lucide-react";
+import { Loader2, History, Bot, User, CheckCircle, Mic, BarChart3 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import InterviewAnalytics from "@/components/InterviewAnalytics";
 
 interface Session {
   id: string;
@@ -91,41 +92,58 @@ const InterviewHistory = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {sessions.map((s) => (
-              <Card
-                key={s.id}
-                className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => setSelected(s)}
-              >
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="secondary" className="capitalize">{s.interview_type}</Badge>
-                      <Badge variant="outline" className="capitalize">{s.difficulty}</Badge>
-                      <span className="text-sm text-muted-foreground">{roleLabels[s.role] || s.role}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(s.created_at).toLocaleDateString("en-US", {
-                        month: "short", day: "numeric", year: "numeric",
-                        hour: "2-digit", minute: "2-digit",
-                      })}
-                      {" · "}
-                      {s.messages.length} messages
-                    </p>
-                    {s.summary && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{s.summary}</p>
-                    )}
-                  </div>
-                  {s.overall_score != null && (
-                    <div className={`text-3xl font-black ${scoreColor(s.overall_score)}`}>
-                      {s.overall_score}%
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Tabs defaultValue="analytics" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="analytics" className="gap-1.5">
+                <BarChart3 className="h-4 w-4" /> Analytics
+              </TabsTrigger>
+              <TabsTrigger value="sessions" className="gap-1.5">
+                <History className="h-4 w-4" /> Sessions
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="analytics">
+              <InterviewAnalytics sessions={sessions} />
+            </TabsContent>
+
+            <TabsContent value="sessions">
+              <div className="space-y-4">
+                {sessions.map((s) => (
+                  <Card
+                    key={s.id}
+                    className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => setSelected(s)}
+                  >
+                    <CardContent className="p-4 flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="secondary" className="capitalize">{s.interview_type}</Badge>
+                          <Badge variant="outline" className="capitalize">{s.difficulty}</Badge>
+                          <span className="text-sm text-muted-foreground">{roleLabels[s.role] || s.role}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(s.created_at).toLocaleDateString("en-US", {
+                            month: "short", day: "numeric", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                          {" · "}
+                          {s.messages.length} messages
+                        </p>
+                        {s.summary && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{s.summary}</p>
+                        )}
+                      </div>
+                      {s.overall_score != null && (
+                        <div className={`text-3xl font-black ${scoreColor(s.overall_score)}`}>
+                          {s.overall_score}%
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
@@ -147,7 +165,6 @@ const InterviewHistory = () => {
 
           {selected && (
             <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-              {/* Score section */}
               {selected.overall_score != null && (
                 <div>
                   <div className={`text-4xl font-black text-center mb-3 ${scoreColor(selected.overall_score)}`}>
@@ -170,7 +187,6 @@ const InterviewHistory = () => {
                 </div>
               )}
 
-              {/* Tips */}
               {selected.tips.length > 0 && (
                 <div>
                   <h3 className="font-semibold mb-2">Improvement Tips</h3>
@@ -185,7 +201,6 @@ const InterviewHistory = () => {
                 </div>
               )}
 
-              {/* Conversation */}
               <div>
                 <h3 className="font-semibold mb-2">Conversation</h3>
                 <div className="space-y-3">
