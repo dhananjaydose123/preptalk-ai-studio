@@ -321,97 +321,151 @@ const Interview = () => {
   }
 
   if (phase === "interview") {
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    const questionNumber = messages.filter((m) => m.role === "assistant").length;
+
     return (
-      <DashboardLayout>
-        <div className="max-w-3xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">Mock Interview</h1>
-              <p className="text-sm text-muted-foreground capitalize">
-                {config.type} • {config.difficulty} • {roleLabels[config.role]}
-              </p>
-            </div>
-            <Button variant="outline" onClick={endInterview} disabled={isLoading}>
+      <div className="fixed inset-0 bg-background z-50 flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-border/50 bg-card/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-sm font-medium">Live Interview</span>
+            <span className="text-xs text-muted-foreground capitalize">
+              {config.type} · {config.difficulty} · {roleLabels[config.role]}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Q{questionNumber}</span>
+            <Button variant="destructive" size="sm" onClick={endInterview} disabled={isLoading}>
               End Interview
             </Button>
           </div>
+        </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "assistant" ? "gradient-primary" : "bg-secondary"}`}>
-                  {msg.role === "assistant" ? <Bot className="h-4 w-4 text-primary-foreground" /> : <User className="h-4 w-4 text-secondary-foreground" />}
+        {/* Main stage */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto">
+          {/* AI Interviewer avatar */}
+          <div className="flex flex-col items-center mb-8">
+            <div className={`relative h-24 w-24 rounded-full gradient-primary flex items-center justify-center mb-4 transition-all duration-300 ${voice.isSpeaking ? "ring-4 ring-primary/40 scale-105" : ""} ${isLoading && !lastAssistant ? "animate-pulse" : ""}`}>
+              <Bot className="h-12 w-12 text-primary-foreground" />
+              {voice.isSpeaking && (
+                <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1.5 shadow-lg">
+                  <Volume2 className="h-3.5 w-3.5 text-primary-foreground animate-pulse" />
                 </div>
-                <div className={`max-w-[80%] rounded-2xl p-4 text-sm ${msg.role === "assistant" ? "bg-secondary text-secondary-foreground" : "gradient-primary text-primary-foreground"}`}>
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+              )}
+            </div>
+            <span className="text-sm font-medium text-muted-foreground">AI Interviewer</span>
+          </div>
+
+          {/* Current question card */}
+          <div className="w-full max-w-2xl">
+            {lastAssistant ? (
+              <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-lg mb-6">
+                <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 text-base leading-relaxed">
+                  <ReactMarkdown>{lastAssistant.content}</ReactMarkdown>
+                </div>
+              </div>
+            ) : isLoading ? (
+              <div className="bg-card border border-border/50 rounded-2xl p-6 shadow-lg mb-6 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary mr-3" />
+                <span className="text-muted-foreground">Preparing your question...</span>
+              </div>
+            ) : null}
+
+            {/* User's last answer (subtle) */}
+            {lastUser && (
+              <div className="flex items-start gap-3 mb-6 opacity-60">
+                <div className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center shrink-0 mt-0.5">
+                  <User className="h-3.5 w-3.5 text-secondary-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground line-clamp-2">{lastUser.content}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Previous Q&A collapsed */}
+          {messages.length > 2 && (
+            <button
+              onClick={() => {
+                const el = document.getElementById("interview-history");
+                el?.classList.toggle("hidden");
+              }}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors mb-4 underline underline-offset-2"
+            >
+              View conversation history ({messages.length} messages)
+            </button>
+          )}
+          <div id="interview-history" className="hidden w-full max-w-2xl max-h-60 overflow-y-auto space-y-3 mb-4 border border-border/30 rounded-xl p-4 bg-muted/30">
+            {messages.slice(0, -2).map((msg, i) => (
+              <div key={i} className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${msg.role === "assistant" ? "gradient-primary" : "bg-secondary"}`}>
+                  {msg.role === "assistant" ? <Bot className="h-3 w-3 text-primary-foreground" /> : <User className="h-3 w-3 text-secondary-foreground" />}
+                </div>
+                <div className={`max-w-[85%] rounded-xl p-2.5 text-xs ${msg.role === "assistant" ? "bg-secondary" : "bg-primary/10"}`}>
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               </div>
             ))}
-            {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
-              <div className="flex gap-3">
-                <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 gradient-primary">
-                  <Bot className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <div className="bg-secondary rounded-2xl p-4">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Voice transcript indicator */}
-          {voice.voiceEnabled && voice.isListening && voice.transcript && (
-            <div className="bg-secondary/50 rounded-lg p-2 mb-2 text-sm text-muted-foreground animate-pulse">
-              🎤 {voice.transcript}
-            </div>
-          )}
-
-          {/* Speaking indicator */}
-          {voice.isSpeaking && (
-            <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-              <Volume2 className="h-4 w-4 animate-pulse text-primary" />
-              <span>AI is speaking...</span>
-              <Button variant="ghost" size="sm" onClick={voice.stopSpeaking} className="h-6 px-2">
-                <VolumeX className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            {voice.voiceEnabled && (
-              <Button
-                size="icon"
-                variant={voice.isListening ? "destructive" : "outline"}
-                className={`shrink-0 h-auto ${voice.isListening ? "animate-pulse" : ""}`}
-                onClick={voice.toggleListening}
-                disabled={isLoading}
-              >
-                {voice.isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-            )}
-            <Textarea
-              placeholder={voice.voiceEnabled ? "Speak or type your response..." : "Type your response..."}
-              className="resize-none"
-              rows={2}
-              value={voice.isListening ? voice.transcript : input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={isLoading || voice.isListening}
-            />
-            <Button
-              id="send-btn"
-              size="icon"
-              className="gradient-primary border-0 shrink-0 h-auto"
-              onClick={() => sendMessage()}
-              disabled={isLoading || !input.trim()}
-            >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </Button>
           </div>
         </div>
-      </DashboardLayout>
+
+        {/* Bottom controls — voice-centric */}
+        <div className="border-t border-border/50 bg-card/80 backdrop-blur-sm px-6 py-4">
+          <div className="max-w-2xl mx-auto">
+            {/* Voice transcript indicator */}
+            {voice.voiceEnabled && voice.isListening && voice.transcript && (
+              <div className="bg-primary/10 rounded-lg p-2.5 mb-3 text-sm flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                <span className="text-foreground">{voice.transcript}</span>
+              </div>
+            )}
+
+            {/* Speaking indicator */}
+            {voice.isSpeaking && (
+              <div className="flex items-center justify-center gap-2 mb-3 text-sm text-muted-foreground">
+                <Volume2 className="h-4 w-4 animate-pulse text-primary" />
+                <span>AI is speaking...</span>
+                <Button variant="ghost" size="sm" onClick={voice.stopSpeaking} className="h-6 px-2">
+                  <VolumeX className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              {voice.voiceEnabled && (
+                <Button
+                  size="icon"
+                  variant={voice.isListening ? "destructive" : "secondary"}
+                  className={`shrink-0 h-12 w-12 rounded-full ${voice.isListening ? "animate-pulse ring-4 ring-destructive/30" : ""}`}
+                  onClick={voice.toggleListening}
+                  disabled={isLoading}
+                >
+                  {voice.isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                </Button>
+              )}
+              <Textarea
+                placeholder={voice.voiceEnabled ? "Speak or type your answer..." : "Type your answer..."}
+                className="resize-none rounded-xl min-h-[48px]"
+                rows={1}
+                value={voice.isListening ? voice.transcript : input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isLoading || voice.isListening}
+              />
+              <Button
+                size="icon"
+                className="gradient-primary border-0 shrink-0 h-12 w-12 rounded-full"
+                onClick={() => sendMessage()}
+                disabled={isLoading || !input.trim()}
+              >
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
