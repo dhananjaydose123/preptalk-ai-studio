@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,25 +6,81 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/components/DashboardLayout";
 import { MotionCard, MotionButton, MotionStagger, MotionItem } from "@/components/MotionElements";
-import { Mic, Users, TrendingUp, Flame, Target, ArrowRight } from "lucide-react";
+import { Mic, Users, TrendingUp, Flame, Target, ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-const stats = [
-  { label: "Sessions Completed", value: "24", icon: Target, color: "text-primary" },
-  { label: "Average Score", value: "82%", icon: TrendingUp, color: "text-primary" },
-  { label: "Practice Streak", value: "7 days", icon: Flame, color: "text-primary" },
-];
+interface Session {
+  id: string;
+  interview_type: string;
+  difficulty: string;
+  role: string;
+  overall_score: number | null;
+  summary: string | null;
+  created_at: string;
+}
 
-const recentSessions = [
-  { id: 1, type: "AI Interview", topic: "React Fundamentals", score: 85, date: "Feb 8, 2026", status: "Completed" },
-  { id: 2, type: "Group Discussion", topic: "AI in Healthcare", score: 78, date: "Feb 7, 2026", status: "Completed" },
-  { id: 3, type: "AI Interview", topic: "System Design", score: 90, date: "Feb 6, 2026", status: "Completed" },
-  { id: 4, type: "AI Interview", topic: "Behavioral Questions", score: 72, date: "Feb 5, 2026", status: "Completed" },
-];
+const roleLabels: Record<string, string> = {
+  frontend: "Frontend Developer",
+  backend: "Backend Developer",
+  fullstack: "Full Stack Developer",
+  data: "Data Analyst",
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
   const displayName = user?.displayName || "Student";
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("interview_sessions")
+        .select("id, interview_type, difficulty, role, overall_score, summary, created_at")
+        .eq("firebase_uid", user.uid)
+        .order("created_at", { ascending: false })
+        .limit(10);
+      if (data) setSessions(data as unknown as Session[]);
+      setLoading(false);
+    };
+    load();
+  }, [user]);
+
+  const stats = useMemo(() => {
+    const scored = sessions.filter((s) => s.overall_score != null);
+    const scores = scored.map((s) => s.overall_score!);
+    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+    // Calculate streak: consecutive days with sessions
+    let streak = 0;
+    if (sessions.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const days = new Set(
+        sessions.map((s) => {
+          const d = new Date(s.created_at);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime();
+        })
+      );
+      const dayMs = 86400000;
+      let check = today.getTime();
+      // Allow today or yesterday as start
+      if (!days.has(check)) check -= dayMs;
+      while (days.has(check)) {
+        streak++;
+        check -= dayMs;
+      }
+    }
+
+    return [
+      { label: "Sessions Completed", value: String(sessions.length), icon: Target, color: "text-primary" },
+      { label: "Average Score", value: scores.length ? `${avg}%` : "—", icon: TrendingUp, color: "text-primary" },
+      { label: "Practice Streak", value: streak > 0 ? `${streak} day${streak > 1 ? "s" : ""}` : "0 days", icon: Flame, color: "text-primary" },
+    ];
+  }, [sessions]);
 
   return (
     <DashboardLayout>
@@ -88,7 +145,7 @@ const Dashboard = () => {
                 <CardContent className="p-6 flex items-center gap-4">
                   <s.icon className={`h-8 w-8 ${s.color}`} />
                   <div>
-                    <p className="text-2xl font-bold">{s.value}</p>
+                    <p className="text-2xl font-bold">{loading ? "…" : s.value}</p>
                     <p className="text-sm text-muted-foreground">{s.label}</p>
                   </div>
                 </CardContent>
@@ -101,34 +158,55 @@ const Dashboard = () => {
       {/* Recent Sessions */}
       <MotionItem>
         <Card className="border-border/50">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Sessions</CardTitle>
+            {sessions.length > 0 && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/history">View all</Link>
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Topic</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentSessions.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.type}</TableCell>
-                    <TableCell>{s.topic}</TableCell>
-                    <TableCell>
-                      <span className={s.score >= 80 ? "text-primary font-semibold" : "text-muted-foreground"}>{s.score}%</span>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{s.date}</TableCell>
-                    <TableCell><Badge variant="secondary">{s.status}</Badge></TableCell>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : sessions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No sessions yet. Start your first interview!</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Difficulty</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sessions.slice(0, 5).map((s) => (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium capitalize">{s.interview_type}</TableCell>
+                      <TableCell>{roleLabels[s.role] || s.role}</TableCell>
+                      <TableCell>
+                        {s.overall_score != null ? (
+                          <span className={s.overall_score >= 80 ? "text-primary font-semibold" : "text-muted-foreground"}>
+                            {s.overall_score}%
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      </TableCell>
+                      <TableCell><Badge variant="outline" className="capitalize">{s.difficulty}</Badge></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </MotionItem>
