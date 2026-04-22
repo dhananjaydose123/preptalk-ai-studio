@@ -569,6 +569,50 @@ const Interview = () => {
               </div>
             )}
 
+            {/* Auto-send countdown */}
+            {autoSendRemainingMs !== null && (
+              <div className="mb-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 animate-fade-in">
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary">
+                    <Send className="h-3.5 w-3.5" />
+                    <span>Auto-sending in {(autoSendRemainingMs / 1000).toFixed(1)}s</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        cancelPendingAutoSend();
+                        sonnerToast.dismiss("voice-autosend");
+                      }}
+                    >
+                      Undo
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-6 px-2 text-xs gradient-primary border-0"
+                      onClick={() => {
+                        const pending = pendingVoiceTextRef.current || input;
+                        cancelPendingAutoSend();
+                        sonnerToast.dismiss("voice-autosend");
+                        if (pending.trim()) sendMessage(pending);
+                      }}
+                    >
+                      Send now
+                    </Button>
+                  </div>
+                </div>
+                <Progress
+                  value={(autoSendRemainingMs / AUTO_SEND_MS) * 100}
+                  className="h-1.5 bg-primary/10 [&>div]:bg-primary [&>div]:transition-none"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Say <span className="font-mono text-foreground/70">"undo last"</span> to cancel or <span className="font-mono text-foreground/70">"send now"</span> to send immediately
+                </p>
+              </div>
+            )}
+
             <div className="flex items-end gap-3">
               {voice.voiceEnabled && (
                 <div className="shrink-0 flex flex-col items-center gap-2">
