@@ -245,6 +245,8 @@ const Interview = () => {
 
   const endInterview = async () => {
     voice.stopSpeaking();
+    cancelPendingAutoSend();
+    sonnerToast.dismiss("voice-autosend");
     if (messages.length < 2) {
       setPhase("setup");
       return;
