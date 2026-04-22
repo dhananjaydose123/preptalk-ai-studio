@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Mic, MicOff, Send, Bot, User, CheckCircle, ArrowLeft, Loader2, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { useVoice } from "@/hooks/useVoice";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
