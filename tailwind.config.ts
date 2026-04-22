@@ -91,6 +91,10 @@ export default {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-33.333%)" },
         },
+        "soundwave": {
+          "0%, 100%": { height: "20%" },
+          "50%": { height: "100%" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -99,6 +103,7 @@ export default {
         "float": "float 3s ease-in-out infinite",
         "fade-in": "fade-in 0.5s ease-out forwards",
         "marquee": "marquee 25s linear infinite",
+        "soundwave": "soundwave 0.8s ease-in-out infinite",
       },
     },
   },
