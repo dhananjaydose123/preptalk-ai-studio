@@ -148,10 +148,11 @@ export function useVoice({ onTranscript, lang = "en-US", silenceTimeoutMs = 1800
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      clearSilenceTimer();
       recognitionRef.current?.stop();
       synthRef.current.cancel();
     };
-  }, []);
+  }, [clearSilenceTimer]);
 
   return {
     isListening,
