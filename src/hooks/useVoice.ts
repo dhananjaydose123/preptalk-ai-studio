@@ -79,6 +79,7 @@ export function useVoice({ onTranscript, lang = "en-US", silenceTimeoutMs = 1800
     recognition.continuous = true;
 
     let finalTranscript = "";
+    lastTranscriptRef.current = "";
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
@@ -90,19 +91,36 @@ export function useVoice({ onTranscript, lang = "en-US", silenceTimeoutMs = 1800
           interim += result[0].transcript;
         }
       }
-      setTranscript(finalTranscript + interim);
+      const combined = finalTranscript + interim;
+      setTranscript(combined);
+      lastTranscriptRef.current = combined;
+
+      // Reset silence timer on every new speech token
+      if (silenceTimeoutMs > 0) {
+        clearSilenceTimer();
+        silenceTimerRef.current = setTimeout(() => {
+          try {
+            recognition.stop();
+          } catch {
+            // ignore
+          }
+        }, silenceTimeoutMs);
+      }
     };
 
     recognition.onend = () => {
+      clearSilenceTimer();
       setIsListening(false);
-      if (finalTranscript.trim()) {
-        onTranscript?.(finalTranscript.trim());
+      const finalText = (finalTranscript || lastTranscriptRef.current).trim();
+      if (finalText) {
+        onTranscript?.(finalText);
       }
       setTranscript("");
     };
 
     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
+      clearSilenceTimer();
       setIsListening(false);
       setTranscript("");
     };
@@ -110,12 +128,13 @@ export function useVoice({ onTranscript, lang = "en-US", silenceTimeoutMs = 1800
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
-  }, [supportsRecognition, voiceEnabled, lang, onTranscript, stopSpeaking]);
+  }, [supportsRecognition, voiceEnabled, lang, onTranscript, stopSpeaking, silenceTimeoutMs, clearSilenceTimer]);
 
   // Stop listening
   const stopListening = useCallback(() => {
+    clearSilenceTimer();
     recognitionRef.current?.stop();
-  }, []);
+  }, [clearSilenceTimer]);
 
   // Toggle listening
   const toggleListening = useCallback(() => {
