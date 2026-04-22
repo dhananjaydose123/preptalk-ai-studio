@@ -118,20 +118,35 @@ const Interview = () => {
 
   const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
   const autoSendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSendTickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingVoiceTextRef = useRef<string>("");
+
+  const AUTO_SEND_MS = 4000;
+  // Live countdown state for the progress bar (null => no pending auto-send)
+  const [autoSendRemainingMs, setAutoSendRemainingMs] = useState<number | null>(null);
+
+  const clearAutoSendTicker = useCallback(() => {
+    if (autoSendTickerRef.current) {
+      clearInterval(autoSendTickerRef.current);
+      autoSendTickerRef.current = null;
+    }
+  }, []);
 
   const cancelPendingAutoSend = useCallback(() => {
     if (autoSendTimerRef.current) {
       clearTimeout(autoSendTimerRef.current);
       autoSendTimerRef.current = null;
     }
+    clearAutoSendTicker();
+    setAutoSendRemainingMs(null);
     pendingVoiceTextRef.current = "";
-  }, []);
+  }, [clearAutoSendTicker]);
 
   // Cleanup any pending auto-send on unmount
   useEffect(() => {
     return () => {
       if (autoSendTimerRef.current) clearTimeout(autoSendTimerRef.current);
+      if (autoSendTickerRef.current) clearInterval(autoSendTickerRef.current);
       sonnerToast.dismiss("voice-autosend");
     };
   }, []);
@@ -139,12 +154,25 @@ const Interview = () => {
   const queueVoiceAutoSend = useCallback((text: string) => {
     // Cancel any prior pending send and replace
     if (autoSendTimerRef.current) clearTimeout(autoSendTimerRef.current);
+    clearAutoSendTicker();
     pendingVoiceTextRef.current = text;
     setInput(text);
 
-    const AUTO_SEND_MS = 4000;
+    const startedAt = Date.now();
+    setAutoSendRemainingMs(AUTO_SEND_MS);
+
+    autoSendTickerRef.current = setInterval(() => {
+      const remaining = Math.max(0, AUTO_SEND_MS - (Date.now() - startedAt));
+      setAutoSendRemainingMs(remaining);
+      if (remaining <= 0) {
+        clearAutoSendTicker();
+      }
+    }, 60);
+
     autoSendTimerRef.current = setTimeout(() => {
       autoSendTimerRef.current = null;
+      clearAutoSendTicker();
+      setAutoSendRemainingMs(null);
       const toSend = pendingVoiceTextRef.current;
       pendingVoiceTextRef.current = "";
       if (toSend && sendFromVoiceRef.current) {
@@ -165,7 +193,7 @@ const Interview = () => {
         },
       },
     });
-  }, [cancelPendingAutoSend]);
+  }, [cancelPendingAutoSend, clearAutoSendTicker]);
 
   const lastAssistantRef = useRef<string>("");
   const endInterviewRef = useRef<(() => void) | null>(null);
