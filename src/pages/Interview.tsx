@@ -167,11 +167,72 @@ const Interview = () => {
     });
   }, [cancelPendingAutoSend]);
 
+  const lastAssistantRef = useRef<string>("");
+  const endInterviewRef = useRef<(() => void) | null>(null);
+
+  /**
+   * Parse a spoken transcript for control commands.
+   * Returns true if a command was handled (caller should NOT queue auto-send).
+   */
+  const handleVoiceCommand = useCallback((raw: string): boolean => {
+    const t = raw.trim().toLowerCase().replace(/[.!?,]+$/g, "");
+    if (!t) return false;
+
+    // Send now
+    if (/^(send( it)?( now)?|submit( now)?|go ahead)$/.test(t)) {
+      const pending = pendingVoiceTextRef.current || input;
+      cancelPendingAutoSend();
+      sonnerToast.dismiss("voice-autosend");
+      if (pending.trim() && sendFromVoiceRef.current) {
+        sonnerToast.success("Sending now");
+        sendFromVoiceRef.current(pending);
+      } else {
+        sonnerToast("Nothing to send yet");
+      }
+      return true;
+    }
+
+    // Undo / cancel
+    if (/^(undo( last)?|cancel( that)?|scratch that|nevermind|never mind|delete that)$/.test(t)) {
+      const hadPending = !!pendingVoiceTextRef.current || !!input;
+      cancelPendingAutoSend();
+      sonnerToast.dismiss("voice-autosend");
+      setInput("");
+      sonnerToast(hadPending ? "Cancelled" : "Nothing to undo");
+      return true;
+    }
+
+    // Repeat / say again
+    if (/^(repeat( question| that)?|say (that )?again|come again|what was that)$/.test(t)) {
+      if (lastAssistantRef.current) {
+        voiceRef.current?.speak(lastAssistantRef.current);
+        sonnerToast("Repeating question");
+      }
+      return true;
+    }
+
+    // End interview
+    if (/^(end interview|stop interview|finish interview|that'?s all|i'?m done)$/.test(t)) {
+      cancelPendingAutoSend();
+      sonnerToast.dismiss("voice-autosend");
+      sonnerToast("Ending interview");
+      endInterviewRef.current?.();
+      return true;
+    }
+
+    return false;
+  }, [cancelPendingAutoSend, input]);
+
   const voice = useVoice({
     onTranscript: (text: string) => {
+      if (handleVoiceCommand(text)) return;
       queueVoiceAutoSend(text);
     },
   });
+
+  // Ref to voice for use inside command handler (avoid TDZ)
+  const voiceRef = useRef(voice);
+  useEffect(() => { voiceRef.current = voice; }, [voice]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
