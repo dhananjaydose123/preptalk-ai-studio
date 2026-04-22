@@ -367,6 +367,9 @@ const Interview = () => {
     }
   };
 
+  // Expose endInterview to voice command handler
+  endInterviewRef.current = endInterview;
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
