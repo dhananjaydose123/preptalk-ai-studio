@@ -15,13 +15,22 @@ interface UseVoiceOptions {
   silenceTimeoutMs?: number;
 }
 
-export function useVoice({ onTranscript, lang = "en-US" }: UseVoiceOptions = {}) {
+export function useVoice({ onTranscript, lang = "en-US", silenceTimeoutMs = 1800 }: UseVoiceOptions = {}) {
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const recognitionRef = useRef<any>(null);
   const synthRef = useRef(window.speechSynthesis);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTranscriptRef = useRef<string>("");
+
+  const clearSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+  }, []);
 
   const supportsRecognition = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
   const supportsSynthesis = typeof window !== "undefined" && "speechSynthesis" in window;
