@@ -435,15 +435,36 @@ const Interview = () => {
 
             <div className="flex items-center gap-3">
               {voice.voiceEnabled && (
-                <Button
-                  size="icon"
-                  variant={voice.isListening ? "destructive" : "secondary"}
-                  className={`shrink-0 h-12 w-12 rounded-full ${voice.isListening ? "animate-pulse ring-4 ring-destructive/30" : ""}`}
-                  onClick={voice.toggleListening}
-                  disabled={isLoading}
-                >
-                  {voice.isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                </Button>
+                <div className="relative shrink-0 h-12 w-12 flex items-center justify-center">
+                  {voice.isListening && (
+                    <>
+                      <span className="absolute inset-0 rounded-full bg-destructive/20 animate-ping" />
+                      <span className="absolute inset-0 rounded-full bg-destructive/15 animate-ping [animation-delay:300ms] [animation-duration:1.6s]" />
+                      <span className="absolute -inset-1 rounded-full bg-destructive/10 animate-ping [animation-delay:600ms] [animation-duration:2s]" />
+                      <div className="absolute -inset-3 flex items-center justify-around pointer-events-none">
+                        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                          <span
+                            key={i}
+                            className="w-0.5 rounded-full bg-destructive/70 animate-soundwave"
+                            style={{
+                              animationDelay: `${i * 90}ms`,
+                              animationDuration: `${700 + (i % 3) * 150}ms`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  <Button
+                    size="icon"
+                    variant={voice.isListening ? "destructive" : "secondary"}
+                    className={`relative z-10 h-12 w-12 rounded-full transition-all ${voice.isListening ? "ring-4 ring-destructive/40 shadow-lg shadow-destructive/30" : ""}`}
+                    onClick={voice.toggleListening}
+                    disabled={isLoading}
+                  >
+                    {voice.isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+                  </Button>
+                </div>
               )}
               <Textarea
                 placeholder={voice.voiceEnabled ? "Speak or type your answer..." : "Type your answer..."}
