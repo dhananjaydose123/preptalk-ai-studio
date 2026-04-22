@@ -117,12 +117,51 @@ const Interview = () => {
   const { user } = useAuth();
 
   const sendFromVoiceRef = useRef<((text: string) => void) | null>(null);
+  const autoSendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingVoiceTextRef = useRef<string>("");
+
+  const cancelPendingAutoSend = useCallback(() => {
+    if (autoSendTimerRef.current) {
+      clearTimeout(autoSendTimerRef.current);
+      autoSendTimerRef.current = null;
+    }
+    pendingVoiceTextRef.current = "";
+  }, []);
+
+  const queueVoiceAutoSend = useCallback((text: string) => {
+    // Cancel any prior pending send and replace
+    if (autoSendTimerRef.current) clearTimeout(autoSendTimerRef.current);
+    pendingVoiceTextRef.current = text;
+    setInput(text);
+
+    const AUTO_SEND_MS = 4000;
+    autoSendTimerRef.current = setTimeout(() => {
+      autoSendTimerRef.current = null;
+      const toSend = pendingVoiceTextRef.current;
+      pendingVoiceTextRef.current = "";
+      if (toSend && sendFromVoiceRef.current) {
+        sendFromVoiceRef.current(toSend);
+      }
+      sonnerToast.dismiss("voice-autosend");
+    }, AUTO_SEND_MS);
+
+    sonnerToast("Sending in 4s…", {
+      id: "voice-autosend",
+      description: text.length > 80 ? text.slice(0, 80) + "…" : text,
+      duration: AUTO_SEND_MS,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          cancelPendingAutoSend();
+          // Keep text in input so user can edit/send manually
+        },
+      },
+    });
+  }, [cancelPendingAutoSend]);
 
   const voice = useVoice({
     onTranscript: (text: string) => {
-      if (sendFromVoiceRef.current) {
-        sendFromVoiceRef.current(text);
-      }
+      queueVoiceAutoSend(text);
     },
   });
 
