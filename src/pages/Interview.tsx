@@ -167,11 +167,72 @@ const Interview = () => {
     });
   }, [cancelPendingAutoSend]);
 
+  const lastAssistantRef = useRef<string>("");
+  const endInterviewRef = useRef<(() => void) | null>(null);
+
+  /**
+   * Parse a spoken transcript for control commands.
+   * Returns true if a command was handled (caller should NOT queue auto-send).
+   */
+  const handleVoiceCommand = useCallback((raw: string): boolean => {
+    const t = raw.trim().toLowerCase().replace(/[.!?,]+$/g, "");
+    if (!t) return false;
+
+    // Send now
+    if (/^(send( it)?( now)?|submit( now)?|go ahead)$/.test(t)) {
+      const pending = pendingVoiceTextRef.current || input;
+      cancelPendingAutoSend();
+      sonnerToast.dismiss("voice-autosend");
+      if (pending.trim() && sendFromVoiceRef.current) {
+        sonnerToast.success("Sending now");
+        sendFromVoiceRef.current(pending);
+      } else {
+        sonnerToast("Nothing to send yet");
+      }
+      return true;
+    }
+
+    // Undo / cancel
+    if (/^(undo( last)?|cancel( that)?|scratch that|nevermind|never mind|delete that)$/.test(t)) {
+      const hadPending = !!pendingVoiceTextRef.current || !!input;
+      cancelPendingAutoSend();
+      sonnerToast.dismiss("voice-autosend");
+      setInput("");
+      sonnerToast(hadPending ? "Cancelled" : "Nothing to undo");
+      return true;
+    }
+
+    // Repeat / say again
+    if (/^(repeat( question| that)?|say (that )?again|come again|what was that)$/.test(t)) {
+      if (lastAssistantRef.current) {
+        voiceRef.current?.speak(lastAssistantRef.current);
+        sonnerToast("Repeating question");
+      }
+      return true;
+    }
+
+    // End interview
+    if (/^(end interview|stop interview|finish interview|that'?s all|i'?m done)$/.test(t)) {
+      cancelPendingAutoSend();
+      sonnerToast.dismiss("voice-autosend");
+      sonnerToast("Ending interview");
+      endInterviewRef.current?.();
+      return true;
+    }
+
+    return false;
+  }, [cancelPendingAutoSend, input]);
+
   const voice = useVoice({
     onTranscript: (text: string) => {
+      if (handleVoiceCommand(text)) return;
       queueVoiceAutoSend(text);
     },
   });
+
+  // Ref to voice for use inside command handler (avoid TDZ)
+  const voiceRef = useRef(voice);
+  useEffect(() => { voiceRef.current = voice; }, [voice]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -202,7 +263,7 @@ const Interview = () => {
       messages: [],
       config,
       onDelta: upsert,
-      onDone: () => { setIsLoading(false); voice.speak(assistantSoFar); },
+      onDone: () => { setIsLoading(false); lastAssistantRef.current = assistantSoFar; voice.speak(assistantSoFar); },
       onError: (err) => {
         setIsLoading(false);
         toast({ title: "Error", description: err, variant: "destructive" });
@@ -240,7 +301,7 @@ const Interview = () => {
       messages: newMessages,
       config,
       onDelta: upsert,
-      onDone: () => { setIsLoading(false); voice.speak(assistantSoFar); },
+      onDone: () => { setIsLoading(false); lastAssistantRef.current = assistantSoFar; voice.speak(assistantSoFar); },
       onError: (err) => {
         setIsLoading(false);
         toast({ title: "Error", description: err, variant: "destructive" });
@@ -305,6 +366,9 @@ const Interview = () => {
       setFeedbackLoading(false);
     }
   };
+
+  // Expose endInterview to voice command handler
+  endInterviewRef.current = endInterview;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -530,6 +594,11 @@ const Interview = () => {
                       <span className="text-muted-foreground italic">Listening for your voice...</span>
                     )}
                   </div>
+                )}
+                {voice.voiceEnabled && (
+                  <p className="text-[10px] text-muted-foreground/70 px-1">
+                    Voice commands: <span className="font-mono text-foreground/70">"send now"</span> · <span className="font-mono text-foreground/70">"undo last"</span> · <span className="font-mono text-foreground/70">"repeat question"</span> · <span className="font-mono text-foreground/70">"end interview"</span>
+                  </p>
                 )}
                 <div className="flex items-end gap-3">
                   <Textarea
