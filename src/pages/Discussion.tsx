@@ -394,16 +394,25 @@ const Discussion = () => {
       },
       onDone: () => {
         const finalText = acc.trim();
+        const release = () => {
+          setNextQueue((q) => (q[0] === next ? q.slice(1) : q));
+          // small natural delay before next speaker
+          setTimeout(() => {
+            turnLoopActiveRef.current = false;
+            setActiveSpeakerId(null);
+          }, 600);
+        };
         if (finalText) {
           setHistory((h) => [...h, { speakerId: next, speakerName, text: finalText }]);
-          speakAsPersona(finalText, persona);
+          // Wait for this speaker to finish talking before releasing the floor
+          if (voicesOn && supportsSynthesis) {
+            speakAsPersona(finalText, persona, release);
+          } else {
+            release();
+          }
+        } else {
+          release();
         }
-        setNextQueue((q) => (q[0] === next ? q.slice(1) : q));
-        // small natural delay before next speaker
-        setTimeout(() => {
-          turnLoopActiveRef.current = false;
-          setActiveSpeakerId(null);
-        }, 800);
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
