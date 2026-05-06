@@ -253,12 +253,22 @@ const Interview = () => {
     return false;
   }, [cancelPendingAutoSend, input]);
 
-  const voice = useVoice({
+  const baseVoice = useVoice({
     onTranscript: (text: string) => {
       if (handleVoiceCommand(text)) return;
       queueVoiceAutoSend(text);
     },
   });
+  const tts = useElevenLabsVoice();
+  const voice = {
+    ...baseVoice,
+    isSpeaking: tts.isSpeaking,
+    speak: (text: string) => {
+      if (!baseVoice.voiceEnabled) return;
+      tts.speak(text, { voiceId: ELEVENLABS_VOICES.interviewer });
+    },
+    stopSpeaking: () => tts.cancel(),
+  };
 
   // Ref to voice for use inside command handler (avoid TDZ)
   const voiceRef = useRef(voice);
