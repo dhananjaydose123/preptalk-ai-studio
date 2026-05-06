@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useVoice } from "@/hooks/useVoice";
+import { useElevenLabsVoice } from "@/hooks/useElevenLabsVoice";
+import { voiceIdForHint, ELEVENLABS_VOICES } from "@/lib/voiceMap";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -70,24 +72,6 @@ const PERSONA_PACKS = [
 
 const AUTO_SEND_MS = 4000;
 
-// ─────────────────────────────────────────────────────────
-// Voice mapping
-// ─────────────────────────────────────────────────────────
-function pickVoicesForHints(): Record<Persona["voiceHint"], SpeechSynthesisVoice | null> {
-  if (typeof window === "undefined" || !window.speechSynthesis) {
-    return { "male-1": null, "male-2": null, "female-1": null, "female-2": null };
-  }
-  const voices = window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith("en"));
-  const male = voices.filter((v) => /male|david|alex|fred|daniel|google uk english male/i.test(v.name) && !/female/i.test(v.name));
-  const female = voices.filter((v) => /female|samantha|victoria|karen|susan|zira|google uk english female/i.test(v.name));
-  const fallback = voices[0] || null;
-  return {
-    "male-1": male[0] || voices[1] || fallback,
-    "male-2": male[1] || male[0] || voices[2] || fallback,
-    "female-1": female[0] || voices[0] || fallback,
-    "female-2": female[1] || female[0] || voices[3] || fallback,
-  };
-}
 
 // ─────────────────────────────────────────────────────────
 // Streaming helper (same SSE pattern as Interview)
@@ -202,7 +186,6 @@ const Discussion = () => {
   const abortRef = useRef<AbortController | null>(null);
   const turnLoopActiveRef = useRef(false);
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null);
-  const voiceMapRef = useRef<Record<Persona["voiceHint"], SpeechSynthesisVoice | null> | null>(null);
   const lastUserSubmitRef = useRef<number>(0);
 
   // auto-send (mirrors Interview)
@@ -211,40 +194,27 @@ const Discussion = () => {
   const autoSendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSendTickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Voice hook ────────────────────────────────────────
+  // ── Voice hook (STT only — TTS uses ElevenLabs) ──────
   const {
     isListening,
-    isSpeaking,
     transcript,
-    voiceEnabled,
     setVoiceEnabled,
-    speak,
-    stopSpeaking,
     toggleListening,
     supportsRecognition,
-    supportsSynthesis,
   } = useVoice({
     silenceTimeoutMs: 1800,
     onTranscript: (text) => handleVoiceTranscript(text),
   });
 
-  // Keep voiceEnabled in sync with voicesOn after start
-  useEffect(() => {
-    setVoiceEnabled(voicesOn);
-  }, [voicesOn, setVoiceEnabled]);
+  const tts = useElevenLabsVoice();
+  const isSpeaking = tts.isSpeaking;
+  const supportsSynthesis = true; // ElevenLabs handles TTS server-side
+  const stopSpeaking = tts.cancel;
 
-  // Load voices once
+  // STT mic stays enabled regardless of AI-voice toggle
   useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    const update = () => {
-      voiceMapRef.current = pickVoicesForHints();
-    };
-    update();
-    window.speechSynthesis.onvoiceschanged = update;
-    return () => {
-      if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
+    setVoiceEnabled(true);
+  }, [setVoiceEnabled]);
 
   // Elapsed timer
   useEffect(() => {
@@ -265,7 +235,7 @@ const Discussion = () => {
     return () => {
       cancelPendingAutoSend();
       abortRef.current?.abort();
-      if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+      tts.cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -287,29 +257,23 @@ const Discussion = () => {
   }, []);
 
   const speakAsPersona = useCallback(
-    (text: string, persona: Persona | undefined, onDone?: () => void) => {
-      const clean = text.replace(/[*_~`#>]/g, "").trim();
-      if (!voicesOn || !supportsSynthesis || !clean) {
+    (text: string, persona: Persona | undefined, speakerId: string, onDone?: () => void) => {
+      if (!voicesOn) {
         onDone?.();
         return;
       }
-      const voice = persona && voiceMapRef.current ? voiceMapRef.current[persona.voiceHint] : null;
-      const u = new SpeechSynthesisUtterance(clean);
-      if (voice) u.voice = voice;
-      u.rate = 1.05;
-      u.pitch = persona?.voiceHint.startsWith("female") ? 1.1 : 0.95;
-      let done = false;
-      const finish = () => {
-        if (done) return;
-        done = true;
-        onDone?.();
-      };
-      u.onend = finish;
-      u.onerror = finish;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      const voiceId = speakerId === "moderator"
+        ? ELEVENLABS_VOICES.moderator
+        : voiceIdForHint(persona?.voiceHint);
+      tts.speak(text, {
+        voiceId,
+        onDone,
+        onError: (err) => {
+          console.error("ElevenLabs TTS error:", err);
+        },
+      });
     },
-    [voicesOn, supportsSynthesis],
+    [voicesOn, tts],
   );
 
   // ── Setup → start ─────────────────────────────────────
@@ -337,7 +301,7 @@ const Discussion = () => {
       setHistory([]);
       setElapsed(0);
       setNextQueue(["moderator", ...data.personas.map((p) => p.id)]);
-      setVoiceEnabled(voicesOn);
+      setVoiceEnabled(true);
       setPhase("live");
     } catch (e: any) {
       toast({ title: "Error", description: e?.message || "Unknown", variant: "destructive" });
@@ -405,8 +369,8 @@ const Discussion = () => {
         if (finalText) {
           setHistory((h) => [...h, { speakerId: next, speakerName, text: finalText }]);
           // Wait for this speaker to finish talking before releasing the floor
-          if (voicesOn && supportsSynthesis) {
-            speakAsPersona(finalText, persona, release);
+          if (voicesOn) {
+            speakAsPersona(finalText, persona, next, release);
           } else {
             release();
           }
@@ -424,7 +388,7 @@ const Discussion = () => {
     setUserQueued(true);
     setPaused(true);
     abortRef.current?.abort();
-    if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+    tts.cancel();
     toast({ title: "You have the floor", description: "Speak or type your contribution." });
   };
 
@@ -481,7 +445,7 @@ const Discussion = () => {
 
   const endDiscussion = async () => {
     abortRef.current?.abort();
-    if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+    tts.cancel();
     cancelPendingAutoSend();
     setPaused(true);
     setGeneratingSummary(true);
