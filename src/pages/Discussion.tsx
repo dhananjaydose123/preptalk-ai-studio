@@ -407,7 +407,7 @@ const Discussion = () => {
     setUserQueued(true);
     setPaused(true);
     abortRef.current?.abort();
-    if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+    tts.cancel();
     toast({ title: "You have the floor", description: "Speak or type your contribution." });
   };
 
