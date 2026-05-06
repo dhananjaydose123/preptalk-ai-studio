@@ -186,7 +186,6 @@ const Discussion = () => {
   const abortRef = useRef<AbortController | null>(null);
   const turnLoopActiveRef = useRef(false);
   const transcriptScrollRef = useRef<HTMLDivElement | null>(null);
-  const voiceMapRef = useRef<Record<Persona["voiceHint"], SpeechSynthesisVoice | null> | null>(null);
   const lastUserSubmitRef = useRef<number>(0);
 
   // auto-send (mirrors Interview)
