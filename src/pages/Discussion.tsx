@@ -445,7 +445,7 @@ const Discussion = () => {
 
   const endDiscussion = async () => {
     abortRef.current?.abort();
-    if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+    tts.cancel();
     cancelPendingAutoSend();
     setPaused(true);
     setGeneratingSummary(true);
