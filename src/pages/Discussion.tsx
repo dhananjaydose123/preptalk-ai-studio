@@ -388,8 +388,8 @@ const Discussion = () => {
         if (finalText) {
           setHistory((h) => [...h, { speakerId: next, speakerName, text: finalText }]);
           // Wait for this speaker to finish talking before releasing the floor
-          if (voicesOn && supportsSynthesis) {
-            speakAsPersona(finalText, persona, release);
+          if (voicesOn) {
+            speakAsPersona(finalText, persona, next, release);
           } else {
             release();
           }
