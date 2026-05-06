@@ -69,7 +69,7 @@ export function useVoice({ onTranscript, lang = "en-US", silenceTimeoutMs = 1800
 
   // Start listening
   const startListening = useCallback(() => {
-    if (!supportsRecognition || !voiceEnabled) return;
+    if (!supportsRecognition) return;
     stopSpeaking(); // stop AI speech when user starts talking
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
