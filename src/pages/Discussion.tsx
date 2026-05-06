@@ -235,19 +235,6 @@ const Discussion = () => {
     setVoiceEnabled(true);
   }, [setVoiceEnabled]);
 
-  // Load voices once
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    const update = () => {
-      voiceMapRef.current = pickVoicesForHints();
-    };
-    update();
-    window.speechSynthesis.onvoiceschanged = update;
-    return () => {
-      if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
-
   // Elapsed timer
   useEffect(() => {
     if (phase !== "live") return;
@@ -267,7 +254,7 @@ const Discussion = () => {
     return () => {
       cancelPendingAutoSend();
       abortRef.current?.abort();
-      if (typeof window !== "undefined" && window.speechSynthesis) window.speechSynthesis.cancel();
+      tts.cancel();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -289,29 +276,23 @@ const Discussion = () => {
   }, []);
 
   const speakAsPersona = useCallback(
-    (text: string, persona: Persona | undefined, onDone?: () => void) => {
-      const clean = text.replace(/[*_~`#>]/g, "").trim();
-      if (!voicesOn || !supportsSynthesis || !clean) {
+    (text: string, persona: Persona | undefined, speakerId: string, onDone?: () => void) => {
+      if (!voicesOn) {
         onDone?.();
         return;
       }
-      const voice = persona && voiceMapRef.current ? voiceMapRef.current[persona.voiceHint] : null;
-      const u = new SpeechSynthesisUtterance(clean);
-      if (voice) u.voice = voice;
-      u.rate = 1.05;
-      u.pitch = persona?.voiceHint.startsWith("female") ? 1.1 : 0.95;
-      let done = false;
-      const finish = () => {
-        if (done) return;
-        done = true;
-        onDone?.();
-      };
-      u.onend = finish;
-      u.onerror = finish;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
+      const voiceId = speakerId === "moderator"
+        ? ELEVENLABS_VOICES.moderator
+        : voiceIdForHint(persona?.voiceHint);
+      tts.speak(text, {
+        voiceId,
+        onDone,
+        onError: (err) => {
+          console.error("ElevenLabs TTS error:", err);
+        },
+      });
     },
-    [voicesOn, supportsSynthesis],
+    [voicesOn, tts],
   );
 
   // ── Setup → start ─────────────────────────────────────
