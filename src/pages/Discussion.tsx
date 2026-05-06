@@ -841,7 +841,10 @@ const Discussion = () => {
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={toggleListening}
+                    onClick={() => {
+                      if (!isListening && !userQueued) raiseHand();
+                      toggleListening();
+                    }}
                     disabled={!supportsRecognition}
                     title={supportsRecognition ? "Toggle microphone" : "Voice not supported"}
                   >
