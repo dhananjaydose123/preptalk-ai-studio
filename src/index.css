@@ -92,8 +92,55 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-background text-foreground;
+    background:
+      radial-gradient(circle at top, hsl(262 83% 58% / 0.12), transparent 28%),
+      radial-gradient(circle at 20% 20%, hsl(292 84% 61% / 0.08), transparent 22%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(var(--background)));
+    overflow-y: auto;
+  }
+
+  html,
+  body {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+
+  html[data-scrolling="true"],
+  body:hover,
+  body:focus-within {
+    scrollbar-color: hsl(262 83% 58% / 0.8) transparent;
+  }
+
+  body::-webkit-scrollbar {
+    width: 0.7rem;
+  }
+
+  body::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  body::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  html[data-scrolling="true"] body::-webkit-scrollbar-thumb,
+  body:hover::-webkit-scrollbar-thumb,
+  body:focus-within::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, hsl(262 83% 58% / 0.85), hsl(292 84% 61% / 0.7));
+  }
+
+  body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, hsl(262 83% 58%), hsl(292 84% 61%));
   }
 }
 
@@ -101,35 +148,36 @@
   .gradient-primary {
     background: linear-gradient(135deg, hsl(262 83% 58%), hsl(292 84% 61%));
   }
+
   .gradient-hero {
     background: linear-gradient(135deg, hsl(262 83% 58%), hsl(239 84% 67%), hsl(292 84% 61%));
   }
+
   .gradient-text {
     background: linear-gradient(135deg, hsl(262 83% 58%), hsl(292 84% 61%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   /* Animated gradient border */
   .animated-border {
     position: relative;
     border-radius: var(--radius);
     overflow: hidden;
   }
+
   .animated-border::before {
     content: '';
     position: absolute;
     inset: 0;
     padding: 2px;
     border-radius: inherit;
-    background: linear-gradient(
-      var(--border-angle, 0deg),
-      hsl(262 83% 58%),
-      hsl(292 84% 61%),
-      hsl(239 84% 67%),
-      hsl(262 83% 58%)
-    );
+    background: linear-gradient(var(--border-angle, 0deg),
+        hsl(262 83% 58%),
+        hsl(292 84% 61%),
+        hsl(239 84% 67%),
+        hsl(262 83% 58%));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
